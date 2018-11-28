@@ -98,7 +98,6 @@ int aperturemathholder = 0;
 TSL2561 tsl(TSL2561_ADDR_HIGH); // spot sensor
 TSL2561 ts2(TSL2561_ADDR_LOW);  // incident sensor
 
-long lux = 0;            // lux
 unsigned int dislux = 0; // truncated lux value for display
 float ftcd = 0;          // foot-candles
 int disftcd = 0;         // rounded ftcd value for display
@@ -108,11 +107,11 @@ int evints = 0;          // the integer part of EV
 int evdecimals = 0;      // the decimal part of EV
 int evhold = 0;          // for converting from float to int
 boolean ledblink = 0;    // viewfinder led
+int batLevel = 0;
 
 //###################   SETUP #####################
 
-void setup()
-{
+void setup() {
   // buttons setup
   pinMode(button1, INPUT_PULLUP); // read button
   pinMode(button2, INPUT_PULLUP);
@@ -149,7 +148,7 @@ void setup()
   ISOarraypointer = EEPROM.read(SI);
   modearraypointer = EEPROM.read(SM);
 
-  if (aperturearraypointer < 0 || aperturearraypointer > 15) {// aperture pointer out of range means the EEPROM is blank, need to clear all these bad reads
+  if (aperturearraypointer < 0 || aperturearraypointer > 15) { // aperture pointer out of range means the EEPROM is blank, need to clear all these bad reads
     aperturearraypointer = 0;
     ISOarraypointer = 0;
     modearraypointer = 0;
@@ -162,113 +161,30 @@ void setup()
 
   // for white display (address 0x3C - ebay board says 0x78)
   // display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3D (for the 128x64)
-  // init done
 }
 
 //###################   MAIN LOOP #####################
 
 void loop() {
-
-  //power control
-  /*
-  if(analogRead(powercheck) > 300 && powercontrolflag == 0 && powercontrolstate == 0) // state = 0, power was previously off (default state on boot) 
-  {
-
-         powercontrolflag = 1; // set flag high
-         powercontrolstate = 1; // power was turned on this time
-
-  }
-  */
-  if (analogRead(powercheck) > 300 || otc > 300) // power button is being pressed, or time is up, shut down
-  {
-    otc = 0;                // clear OTC
-    display.clearDisplay(); // clears old stuff
-    delay(500);
-    display.display();
-
-    pinMode(powercontrol, OUTPUT);   // power control pin goes to output mode
-    digitalWrite(powercontrol, LOW); // power off
-  }
-  /*  
-  else if(analogRead(powercheck) < 300 && powercontrolflag == 1)
- {
-   powercontrolflag = 0;  // reset flag if button is unpressed but flag is high - ready to be pressed again
- } 
-*/
-
-  // battery level check
-  batlevel = analogRead(batinput); // read the battery
-
-  batpercent = (batlevel - 310) * 1.61;
+  checkPower();
 
   // text display
   display.setTextSize(1);
   display.setTextColor(WHITE);
 
   //MODE DISPLAY
-
   display.clearDisplay(); // clears old stuff
-
-  /* 
-  display.setCursor(5,0);
-  display.print(F("MODE: "));
-  display.println(modearraypointer);
-  display.println(modearray[modearraypointer]); 
-*/
-
-  //battery display
-  display.setCursor(36, 0);
-  //  display.print(F("BAT:"));
-  display.print(batpercent);
-  display.print(F("%"));
-  //display.print(batlevelint);
-  // display.print(F("."));
-  // display.print(batleveldec);
-  // display.println(F("V"));
-  //divider line
-
-  //display.drawLine(63, 16, 63, 64, WHITE);
-  /*
-  //right side line 1
-  display.setCursor(70,20);
-  display.print(F("ISO:"));
-  display.println(ISOarray[ISOarraypointer]);
-  // line 2
-  display.setCursor(70,32);
-  display.print(F("EV:"));
-  display.print(evints);
-  display.print(F("."));
-  display.println(evdecimals);
-  //line 3
-  display.setCursor(70,44);
-  display.print(dislux);
-  display.println(F(" Lx"));
-  //line 4
-  display.setCursor(70,56);
-  display.print(disftcd); //disftcd
-  display.println(F(" FtCd"));
- */
+  updateBatteryLevel(readBatteryLevel());
 
   // second set
-
   display.setTextSize(2);
   display.setTextColor(WHITE);
-  display.setCursor(0, 0); // first num is horz, second is vert
+  display.setCursor(0, 0);
   display.print(F("f/"));
   display.println(aperturearray[aperturearraypointer]);
 
-  // display.setTextSize(1);
-  //display.setCursor(5,32); // first num is horz, second is vert
-
-  // TEST CODE FOR DEVELOPMENT
-  //display.print(roundev);
-  // display.print(" ");
-  // display.print(aperturearraypointer);
-  //display.print(" ");
-  //display.print(ISOarraypointer);
-
   display.setTextSize(2);
-  display.setCursor(0, 16); // first num is horz, second is vert
+  display.setCursor(0, 16);
   display.println(shutterarray[shutterarraypointer]);
 
   //writes to the display
@@ -286,31 +202,16 @@ void loop() {
   // BUTTON 1 ACTIONS - SAMPLE AND PROCESS
 
   // if button is pressed and read flag is low (no reading yet)
-  if (button1state == LOW && button1flag == 0) {
+  if ((button1state & button1flag) == 0) {
     // lux read and corrective math
     otc = 0; // reset OTC
-    if (modearraypointer == 0) {
-      lux = ts2.getLuminosity(TSL2561_VISIBLE); // inc sensor
-      // lux = lux / 3.828; // calibrated value for sensor 1as per Sekonic L398 readings
-    } else if (modearraypointer == 1) {
-      // lux = lux / 3.828; // calibrated value for sensor 1 as per Pentax V spotmeter off grey card
-      lux = tsl.getLuminosity(TSL2561_VISIBLE); // spot sensor
-    } else if (modearraypointer == 2) {
-      /**
-       * lux = lux * 26.719;  // calibrated value for sensor 2 as per Pentax V spotmeter off grey card
-       * sensor will be at bottom of tube so value will be drastically reduced 27.3504
-       **/
-      lux = tsl.getLuminosity(TSL2561_VISIBLE); // spot sensor
-    }
+    int lux = getLuminosityReading();
 
     ftcd = lux / 10.764; // convert to foot candles
 
     // Find the EV
-
     ev = 1.4481 * log(ftcd) + 1.6599; // convert footcandles to exposure value
-
     // new formula seems more accurate
-
     ev = log(lux / 2.5) / log(2); // EV formula using lux
 
     roundev = round(ev); // round EV to help with math
@@ -326,7 +227,7 @@ void loop() {
     calculations(); // recalculates the shutter/aperture combo based on new value
 
     button1flag = 1; // set flag high
-  } else if (button1state == HIGH && button1flag == 1) {
+  } else {
     button1flag = 0; // reset lux read flag if button is unpressed but flag is high - ready to be pressed again
   }
 
@@ -371,14 +272,64 @@ void loop() {
 */
 }
 
-void calculations()
-{
+void checkPower() {
+  if (analogRead(powercheck) > 300 || otc > 300) { // power button is being pressed, or time is up, shut down
+    otc = 0;                // clear OTC
+    display.clearDisplay(); // clears old stuff
+    delay(500);
+    display.display();
 
-  if (roundev != 0) // checks there is a reading value, skip calculations and leave shutterarraypointer at 23 so it shows a blank
-  {
-    do
-    {
+    pinMode(powercontrol, OUTPUT);   // power control pin goes to output mode
+    digitalWrite(powercontrol, LOW); // power off
+  }
+}
 
+int readBatteryLevel() {
+  return ((analogRead(batinput) - 310) * 1.61);
+}
+
+int calculateRoundedExposure() {
+
+}
+
+int getLuminosityReading() {
+  if (modearraypointer == 0) {
+    /***
+     * Inc sensor
+     * lux = lux / 3.828; // calibrated value for sensor 1as per Sekonic L398 readings
+     * */
+    return ts2.getLuminosity(TSL2561_VISIBLE);
+  } else if (modearraypointer == 1) {
+    // lux = lux / 3.828; // calibrated value for sensor 1 as per Pentax V spotmeter off grey card
+    return tsl.getLuminosity(TSL2561_VISIBLE); // spot sensor
+  } else if (modearraypointer == 2) {
+    /**
+    * lux = lux * 26.719;  // calibrated value for sensor 2 as per Pentax V spotmeter off grey card
+    * sensor will be at bottom of tube so value will be drastically reduced 27.3504
+    **/
+    return tsl.getLuminosity(TSL2561_VISIBLE); // spot sensor
+  }
+
+  return 0;
+}
+
+/**
+ * Only update the display if value has changed
+ * */
+void updateBatteryLevel(currentLevel) {
+  if (batLevel != currentLevel) {
+    batLevel = currentLevel;
+
+    display.setCursor(36, 0);
+    // display.print(F("BAT:"));
+    display.print(batpercent);
+    display.print(F("%"));
+  }
+}
+
+void calculations() {
+  if (roundev != 0) { // checks there is a reading value, skip calculations and leave shutterarraypointer at 23 so it shows a blank
+    do {
       shuttermathholder = shuttermath[shutterarraypointer];
       aperturemathholder = aperturemath[aperturearraypointer];
       ISOmathholder = ISOmath[ISOarraypointer];
@@ -389,15 +340,11 @@ void calculations()
 
       // Calculate shutter/aperture combination
 
-      if (cev < roundev && shutterarraypointer >= 1 && shutterarraypointer <= 23) // calculated EV is less than measured EV, decrement shutter speed (add more light)
-      {
+      if (cev < roundev && shutterarraypointer >= 1 && shutterarraypointer <= 23) {// calculated EV is less than measured EV, decrement shutter speed (add more light)
         shutterarraypointer--;
-      }
-      else if (cev > roundev && shutterarraypointer >= 0 && shutterarraypointer <= 22) // calculated EV is more than measured EV, increment shutter speed (remove light)
-      {
+      } else if (cev > roundev && shutterarraypointer >= 0 && shutterarraypointer <= 22) {// calculated EV is more than measured EV, increment shutter speed (remove light)
         shutterarraypointer++;
       }
-
     } while (cev != roundev);
   }
 }
