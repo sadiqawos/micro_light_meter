@@ -52,7 +52,7 @@ int SM = 2; // eeprom location for mode setting storage
 
 //MODE ARRAY
 const char *modearray[] = {"INCIDENT", "REFLECT"};
-int modearraypointer = 0;
+byte modearraypointer = 0;
 
 // MENU ARRAY
 const char *menuarray[] = {"BATTERY", "ISO", "PRIORITY MODE", "METERING MODE", "SHUTTER", "APERTURE", "POWER OFF TIMER"};
@@ -65,7 +65,7 @@ const int powermath[] = {5, 15, 30, 60};
 // ISO VALUE ARRAY
 const int ISOarray[] = {1, 3, 6, 12, 25, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800}; // values for screen
 const int ISOmath[] = {6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7};                   // values for math - adjusts calculated EV for change in sensitivity
-int ISOarraypointer = 9;
+byte ISOarraypointer = 9;
 int ISOmathholder = 0;
 
 // Shutter Speed array
@@ -74,13 +74,13 @@ int ISOmathholder = 0;
 const char *shutterarray[] = {"1/8k", "1/4k", "1/2k", "1/1k", "1/500", "1/250", "1/125", "1/60", "1/30", "1/15", "1/8", "1/4", "1/2", "1s", "2s", "4s", "8s", "16s", "32s", "1m", "2m", "4m", "8m", " "}; //values for on screen
 //const char* shutterarray[] = {};  //values for on screen
 const int shuttermath[] = {12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11}; // values for EV calculations
-int shutterarraypointer = 23;                                                                                       // pointer points for both arrays.  Starts at 23 so it comes up blank before first measurement
+byte shutterarraypointer = 23;                                                                                       // pointer points for both arrays.  Starts at 23 so it comes up blank before first measurement
 int shuttermathholder = 0;
 
 // Aperture array
 const char *aperturearray[] = {"0.7", "1", "1.4", "2", "2.8", "4", "5.6", "8", "11", "16", "22", "32", "45", "64", "90", "128"}; // values for on screen
 const int aperturemath[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};                                               // values for ev calculations
-int aperturearraypointer = 3;                                                                                                    // pointer points for both arrays
+byte aperturearraypointer = 3;                                                                                                    // pointer points for both arrays
 int aperturemathholder = 0;
 
 // Example for demonstrating the TSL2561 library - public domain!
