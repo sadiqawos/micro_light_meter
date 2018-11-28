@@ -26,9 +26,6 @@ const int button1 = 8;
 const int button2 = 11;
 const int button3 = 3;
 const int button4 = 4;
-const int button5 = 9;
-const int button6 = 5;
-const int button7 = 10;
 
 int powercheck = A1; // testing to see if the user is trying to turn off the unit
 
@@ -37,8 +34,8 @@ int led = 13;          // led in viewfinder
 int powercontrol = A2; // turns off 3.3V boost regulator when put HIGH, holds low after startup
 
 // button flags
-int button1state, button2state, button3state, button4state, button5state, button6state, button7state, powercontrolstate = 0; // button input holders
-boolean button1flag, button2flag, button3flag, button4flag, button5flag, button6flag, button7flag, powercontrolflag = 0;     // flags to detect read so one button press = one action only
+int button1state, button2state, button3state, button4state, powercontrolstate = 0; // button input holders
+boolean button1flag, button2flag, button3flag, button4flag, powercontrolflag = 0; // flags to detect read so one button press = one action only
 
 const int batinput = A0;            // battery voltage check, 100k voltage divider
 int cev = 0;                  // calculated EV value
