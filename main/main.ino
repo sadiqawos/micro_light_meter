@@ -210,24 +210,28 @@ String getMenuValue(int pointer, boolean left, boolean right) {
 
 byte recalculatePointer(byte pointer, byte minVal, byte maxVal, boolean left, boolean right) {
   if (left == true) {
-    return decPointer(pointer, minVal);
+    return decPointer(pointer, minVal, maxVal - 1);
   } else if (right == true) {
-    return incPointer(pointer, maxVal);
+    return incPointer(pointer, maxVal, minVal);
   } else {
     return pointer;
   }
 }
 
-byte decPointer(byte val, byte minVal) {
+byte decPointer(byte val, byte minVal, byte resetVal) {
   if (val > minVal) {
     val--;
+  } else if (val == minVal) {
+    val = resetVal;
   }
   return val;
 }
 
-byte incPointer(byte val, byte maxVal) {
+byte incPointer(byte val, byte maxVal, byte resetVal) {
   if (val < maxVal-1) {
     val++;
+  } else {
+    val = resetVal;
   }
   return val;
 }
