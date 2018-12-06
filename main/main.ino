@@ -118,15 +118,16 @@ void loop() {
   menuLeftBtn.tick();
   menuRightBtn.tick();
   delay(10);
-  /*save eeprom code
-    EEPROM.write(SA,aperturearraypointer);
-    EEPROM.write(SI,ISOarraypointer);
-    EEPROM.write(SM,modearraypointer);
-  */
 }
 
 void takeSample() {
+  if (menuMode) { // Save settings before exit menu page
+    EEPROM.write(SA,aperturearraypointer);
+    EEPROM.write(SI,ISOarraypointer);
+    EEPROM.write(SM,modearraypointer);
+  }
   menuMode = false;
+
   int lux = getLuminosityReading();
 
   float ftcd = lux / 10.764; // convert to foot candles
