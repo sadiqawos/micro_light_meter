@@ -45,6 +45,7 @@ byte menuarraypointer = 0;
 byte POWER_SIZE = 4;
 const char *powerarray[] = {"5s", "15s", "30s", "1min"};
 const int powermath[] = {5, 15, 30, 60};
+byte powerOffPointer = 0;
 
 // ISO VALUE ARRAY
 byte ISO_SIZE = 14;
@@ -64,6 +65,7 @@ const char *aperturearray[] = {"0.7", "1", "1.4", "2", "2.8", "4", "5.6", "8", "
 const int aperturemath[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};                                               // values for ev calculations
 byte aperturearraypointer = 3;                                                                                                    // pointer points for both arrays
 
+unsigned long lastTick;
 TSL2561 tsl(TSL2561_ADDR_HIGH); // spot sensor
 TSL2561 ts2(TSL2561_ADDR_LOW);  // incident sensor
 
@@ -82,7 +84,11 @@ void setup() {
   menuLeftBtn.attachClick(menuLeft);
   menuRightBtn.attachClick(menuRight);
 
-  pinMode(powercontrol, INPUT); // power control pin
+  /**
+   * Hold the device ON by driving the power control pin HIGH
+  */
+  pinMode(powercontrol, OUTPUT);
+  digitalWrite(powercontrol, HIGH);
 
   tsl.setGain(TSL2561_GAIN_16X); // set 16x gain (for dim situations)
   ts2.setGain(TSL2561_GAIN_16X);
@@ -106,9 +112,10 @@ void setup() {
 
   // for blue/yellow display
   display.begin(SSD1306_SWITCHCAPVCC, 0x3c); // initialize with the I2C addr 0x3D (for the 128x64)
-  display.setTextSize(2);
+  display.setTextSize(1);
   display.setTextColor(WHITE);
   takeSample();
+  resetClock();
 }
 
 void loop() {
@@ -118,9 +125,11 @@ void loop() {
   menuLeftBtn.tick();
   menuRightBtn.tick();
   delay(10);
+  tryShutdown();
 }
 
 void takeSample() {
+  resetClock();
   if (menuMode) { // Save settings before exit menu page
     EEPROM.write(SA,aperturearraypointer);
     EEPROM.write(SI,ISOarraypointer);
@@ -148,6 +157,7 @@ void takeSample() {
 }
 
 void menuDown() {
+  resetClock();
   if (menuarraypointer < MENU_SIZE-1) {
     menuarraypointer++;
   } else {
@@ -158,6 +168,7 @@ void menuDown() {
 }
 
 void menuLeft() {
+  resetClock();
   if (!menuMode) {
     return;
   }
@@ -166,6 +177,7 @@ void menuLeft() {
 }
 
 void menuRight() {
+  resetClock();
   if (!menuMode) {
     return;
   }
@@ -241,7 +253,7 @@ void displaySample() {
   display.setCursor(32, 0);
   display.print(F("f/"));
   display.println(aperturearray[aperturearraypointer]);
-    display.setCursor(32, 16);
+  display.setCursor(32, 16);
   display.println(shutterarray[shutterarraypointer]);
 
   display.display();
@@ -251,7 +263,7 @@ void drawMenu(byte pointer, String value) {
   display.clearDisplay();
   display.setCursor(32, 0);
   display.println(menuarray[pointer]);
-      display.setCursor(32, 16);
+  display.setCursor(32, 16);
   display.print(value);
   display.display();
 }
@@ -282,6 +294,20 @@ void calculations(int roundev) {
   }
 }
 
+void resetClock() {
+  lastTick = millis();
+}
+
+void tryShutdown() {
+  unsigned long timeSinceLastActivity = millis() - lastTick;
+  if (timeSinceLastActivity > (powermath[powerOffPointer] * 1000)) {
+    display.clearDisplay();
+    display.display();
+    pinMode(powercontrol, OUTPUT);   // power control pin goes to output mode
+    digitalWrite(powercontrol, LOW); // power off
+  }
+}
+
 /**
 void updateBatteryLevel(currentLevel) {
   currentLevel = ((analogRead(batinput) - 310) * 1.61);
@@ -292,18 +318,6 @@ void updateBatteryLevel(currentLevel) {
     // display.print(F("BAT:"));
     display.print(batpercent);
     display.print(F("%"));
-  }
-}
-
-void checkPower() {
-  if (analogRead(powercheck) > 300 || otc > 300) { // power button is being pressed, or time is up, shut down
-    otc = 0;                // clear OTC
-    display.clearDisplay(); // clears old stuff
-    delay(500);
-    display.display();
-
-    pinMode(powercontrol, OUTPUT);   // power control pin goes to output mode
-    digitalWrite(powercontrol, LOW); // power off
   }
 }
 */
