@@ -2,7 +2,7 @@
 #include <Wire.h>
 #include <EEPROM.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_SSD1306_32.h>
 #include <OneButton.h>
 
 #define OLED_RESET A3
@@ -24,8 +24,8 @@ Adafruit_SSD1306 display(OLED_RESET);
 //const int batinput = A0;            // battery voltage check, 100k voltage divider
 // int powercheck = A1; // testing to see if the user is trying to turn off the unit
 // boolean powercontrolflag = 0;
-int powercontrol = A2; // turns off 3.3V boost regulator when put HIGH, holds low after startup
-byte batLevel = 0;
+int powercontrol = 0; // turns off 3.3V boost regulator when put HIGH, holds low after startup
+byte batLevel = A0;
 
 byte SA = 0; // eeprom location for aperture setting storage
 byte SI = 1; // eeprom location for ISO setting storage
@@ -33,12 +33,12 @@ byte SM = 2; // eeprom location for mode setting storage
 
 //MODE ARRAY
 byte MODE_SIZE = 2;
-const char *modearray[] = {"INCIDENT", "REFLECT"};
+const char *modearray[] = {"INCI.", "REFL."};
 byte modearraypointer = 0;
 
 // MENU ARRAY
 #define MENU_SIZE 7
-const char *menuarray[] = {"BAT", "ISO", "PR-MODE", "MET-MODE", "SHUTTER", "APERTURE", "T-OUT"};
+const char *menuarray[] = {"BAT", "ISO", "PRI.", "METER", "SHUT.", "APER.E", "T-OUT"};
 byte menuarraypointer = 0;
 
 // POWER OFF TIMER ARRAY
@@ -68,10 +68,10 @@ TSL2561 tsl(TSL2561_ADDR_HIGH); // spot sensor
 TSL2561 ts2(TSL2561_ADDR_LOW);  // incident sensor
 
 // input definitions
-OneButton sampleBtn(10, true);
-OneButton menuDownBtn(11, true);
-OneButton menuLeftBtn(12, true);
-OneButton menuRightBtn(A0, true);
+OneButton sampleBtn(1, true);
+OneButton menuDownBtn(9, true);
+OneButton menuLeftBtn(8, true);
+OneButton menuRightBtn(10, true);
 
 bool menuMode = false;
 
@@ -238,9 +238,10 @@ byte incPointer(byte val, byte maxVal, byte resetVal) {
 
 void displaySample() {
   display.clearDisplay();
-  display.setCursor(0, 0);
+  display.setCursor(32, 0);
   display.print(F("f/"));
   display.println(aperturearray[aperturearraypointer]);
+    display.setCursor(32, 16);
   display.println(shutterarray[shutterarraypointer]);
 
   display.display();
@@ -248,8 +249,9 @@ void displaySample() {
 
 void drawMenu(byte pointer, String value) {
   display.clearDisplay();
-  display.setCursor(0, 0);
+  display.setCursor(32, 0);
   display.println(menuarray[pointer]);
+      display.setCursor(32, 16);
   display.print(value);
   display.display();
 }
