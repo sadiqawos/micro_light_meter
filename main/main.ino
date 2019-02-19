@@ -2,20 +2,12 @@
 #include <Wire.h>
 #include <EEPROM.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306_32.h>
+#include <Adafruit_SSD1306.h>
 #include <OneButton.h>
 
 #define OLED_RESET A3
 Adafruit_SSD1306 display(OLED_RESET);
 #include <TSL2561.h>
-
-#define NUMFLAKES 10
-#define XPOS 0
-#define YPOS 1
-#define DELTAY 2
-
-#define LOGO16_GLCD_HEIGHT 16
-#define LOGO16_GLCD_WIDTH 16
 
 #if (SSD1306_LCDHEIGHT != 32)
 #error("E");
@@ -38,7 +30,7 @@ byte modearraypointer = 0;
 
 // MENU ARRAY
 #define MENU_SIZE 7
-const char *menuarray[] = {"BAT", "ISO", "PRI.", "METER", "SHUT.", "APER.E", "T-OUT"};
+const char *menuarray[] = {"BAT", "ISO", "PRI.", "METER", "SHUT.", "AP..", "T-OUT"};
 byte menuarraypointer = 0;
 
 // POWER OFF TIMER ARRAY
@@ -112,10 +104,13 @@ void setup() {
 
   // for blue/yellow display
   display.begin(SSD1306_SWITCHCAPVCC, 0x3c); // initialize with the I2C addr 0x3D (for the 128x64)
-  display.setTextSize(1);
+  display.setTextSize(2);
   display.setTextColor(WHITE);
+
+  display.clearDisplay();
+  display.display();
+  delay(10);
   takeSample();
-  resetClock();
 }
 
 void loop() {
@@ -124,8 +119,8 @@ void loop() {
   menuDownBtn.tick();
   menuLeftBtn.tick();
   menuRightBtn.tick();
-  delay(10);
   tryShutdown();
+  delay(10);
 }
 
 void takeSample() {
@@ -196,7 +191,7 @@ String getMenuValue(int pointer, boolean left, boolean right) {
       value = String(ISOarray[ISOarraypointer]);
       break;
     case 2:
-      value = "F-stop";
+      value = "AP"; //SP for shutter
       break;
     case 3:
       modearraypointer = recalculatePointer(modearraypointer, 0, MODE_SIZE, left, right);
@@ -206,15 +201,13 @@ String getMenuValue(int pointer, boolean left, boolean right) {
       shutterarraypointer = recalculatePointer(shutterarraypointer, 0, SHUTTER_SIZE, left, right);
       value = String(shutterarray[shutterarraypointer]);
       break;
-    case 5: {
-        String fstop = "F/";
-        aperturearraypointer = recalculatePointer(aperturearraypointer, 0, APERTURE_SIZE, left, right);
-        fstop.concat(aperturearray[aperturearraypointer]);
-        value = fstop;
-      }
+    case 5:
+         aperturearraypointer = recalculatePointer(aperturearraypointer, 0, APERTURE_SIZE, left, right);
+         value = String("f/" + String(aperturearray[aperturearraypointer]));//.concat(aperturearray[aperturearraypointer]);
       break;
     case 6:
-      value = "5";
+      powerOffPointer = recalculatePointer(powerOffPointer, 0, POWER_SIZE, left, right);
+      value = String(powerarray[powerOffPointer]);
       break;
   }
   return value;
@@ -250,10 +243,9 @@ byte incPointer(byte val, byte maxVal, byte resetVal) {
 
 void displaySample() {
   display.clearDisplay();
-  display.setCursor(32, 0);
+  display.setCursor(0, 0);
   display.print(F("f/"));
   display.println(aperturearray[aperturearraypointer]);
-  display.setCursor(32, 16);
   display.println(shutterarray[shutterarraypointer]);
 
   display.display();
@@ -261,9 +253,8 @@ void displaySample() {
 
 void drawMenu(byte pointer, String value) {
   display.clearDisplay();
-  display.setCursor(32, 0);
+  display.setCursor(0, 0);
   display.println(menuarray[pointer]);
-  display.setCursor(32, 16);
   display.print(value);
   display.display();
 }
@@ -303,6 +294,7 @@ void tryShutdown() {
   if (timeSinceLastActivity > (powermath[powerOffPointer] * 1000)) {
     display.clearDisplay();
     display.display();
+    delay(10);
     pinMode(powercontrol, OUTPUT);   // power control pin goes to output mode
     digitalWrite(powercontrol, LOW); // power off
   }
