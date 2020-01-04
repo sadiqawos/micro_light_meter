@@ -34,8 +34,8 @@ const char *modearray[] = {"INCI.", "REFL."};
 byte modearraypointer = 0;
 
 // MENU ARRAY
-#define MENU_SIZE 7
-const char *menuarray[] = {"BAT", "ISO", "PRIOR", "METER", "SHUTT", "APERT", "T-OUT"};
+#define MENU_SIZE 6
+const char *menuarray[] = {"ISO", "PRIOR", "METER", "SHUTT", "APERT", "T-OUT"};
 byte menuarraypointer = 0;
 
 // POWER OFF TIMER ARRAY
@@ -99,8 +99,7 @@ void setup() {
   modearraypointer = EEPROM.read(SM);
 
   // aperture pointer out of range means the EEPROM is blank, need to clear all these bad reads
-  if (aperturearraypointer < 0 || aperturearraypointer > 15)
-  {
+  if (aperturearraypointer < 0 || aperturearraypointer > 15) {
     aperturearraypointer = 0;
     ISOarraypointer = 0;
     modearraypointer = 0;
@@ -129,9 +128,7 @@ void setup() {
   takeSample();
 }
 
-void loop()
-{
-  //  updateBatteryLevel(readBatteryLevel());
+void loop() {
   sampleBtn.tick();
   menuDownBtn.tick();
   menuLeftBtn.tick();
@@ -140,11 +137,10 @@ void loop()
   delay(10);
 }
 
-void takeSample()
-{
+void takeSample() {
   resetClock();
-  if (menuMode)
-  { // Save settings before exit menu page
+  // Save settings before exit menu page
+  if (menuMode) {
     EEPROM.write(SA, aperturearraypointer);
     EEPROM.write(SI, ISOarraypointer);
     EEPROM.write(SM, modearraypointer);
@@ -167,17 +163,22 @@ void takeSample()
   Wire.write(0x88); //low
   Wire.endTransmission();
   Wire.requestFrom((uint8_t)I2C_ADDR, (uint8_t)1);
+
   delay(1);
-  if (Wire.available())
+
+  if (Wire.available()) {
     lsb = Wire.read();
+  }
 
   Wire.beginTransmission(I2C_ADDR);
   Wire.write(0x89); //high
   Wire.endTransmission();
   Wire.requestFrom((uint8_t)I2C_ADDR, (uint8_t)1);
   delay(1);
-  if (Wire.available())
+
+  if (Wire.available()) {
     msb = Wire.read();
+  }
 
   channel1 = (msb << 8) | lsb;
 
@@ -186,17 +187,23 @@ void takeSample()
   Wire.write(0x8A); //low
   Wire.endTransmission();
   Wire.requestFrom((uint8_t)I2C_ADDR, (uint8_t)1);
+
   delay(1);
-  if (Wire.available())
+
+  if (Wire.available()) {
     lsb = Wire.read();
+  }
 
   Wire.beginTransmission(I2C_ADDR);
   Wire.write(0x8B); //high
   Wire.endTransmission();
   Wire.requestFrom((uint8_t)I2C_ADDR, (uint8_t)1);
+
   delay(1);
-  if (Wire.available())
+
+  if (Wire.available()) {
     msb = Wire.read();
+  }
 
   channel0 = (msb << 8) | lsb;
 
@@ -207,8 +214,7 @@ void takeSample()
   //**************** END LTR329ALS ************************************
 }
 
-void calculate()
-{
+void calculate() {
 
   lux = lux / 2.5; // correct lux for the LTR329ALS sensor
 
@@ -229,90 +235,73 @@ void calculate()
   displaySample();
 }
 
-void menuDown()
-{
+void menuDown() {
   resetClock();
-  if (menuarraypointer < MENU_SIZE - 1)
-  {
+  if (menuarraypointer < MENU_SIZE - 1) {
     menuarraypointer++;
-  }
-  else
-  {
+  } else {
     menuarraypointer = 0;
   }
   menuMode = true;
   drawMenu(menuarraypointer, getMenuValue(menuarraypointer, false, false));
 }
 
-void menuLeft()
-{
+void menuLeft() {
   resetClock();
-  if (!menuMode)
-  {
+
+  if (!menuMode) {
     return;
   }
   String value = getMenuValue(menuarraypointer, true, false);
   drawMenu(menuarraypointer, value);
 }
 
-void menuRight()
-{
+void menuRight() {
   resetClock();
-  if (!menuMode)
-  {
+  if (!menuMode) {
     return;
   }
   String value = getMenuValue(menuarraypointer, false, true);
   drawMenu(menuarraypointer, value);
 }
 
-String getMenuValue(int pointer, boolean left, boolean right)
-{
+String getMenuValue(int pointer, boolean left, boolean right) {
   String value;
-  switch (pointer)
-  {
-  case 0:
-    value = String("100 %");
-    break;
-  case 1:
-    ISOarraypointer = recalculatePointer(ISOarraypointer, 0, ISO_SIZE, left, right);
-    value = String(ISOarray[ISOarraypointer]);
-    break;
-  case 2:
-    value = "AP"; //SP for shutter
-    break;
-  case 3:
-    modearraypointer = recalculatePointer(modearraypointer, 0, MODE_SIZE, left, right);
-    value = String(modearray[modearraypointer]);
-    break;
-  case 4:
-    shutterarraypointer = recalculatePointer(shutterarraypointer, 0, SHUTTER_SIZE, left, right);
-    value = String(shutterarray[shutterarraypointer]);
-    break;
-  case 5:
-    aperturearraypointer = recalculatePointer(aperturearraypointer, 0, APERTURE_SIZE, left, right);
-    value = String("f/" + String(aperturearray[aperturearraypointer])); //.concat(aperturearray[aperturearraypointer]);
-    break;
-  case 6:
-    powerOffPointer = recalculatePointer(powerOffPointer, 0, POWER_SIZE, left, right);
-    value = String(powerarray[powerOffPointer]);
-    break;
+
+  switch (pointer) {
+    case 0:
+      ISOarraypointer = recalculatePointer(ISOarraypointer, 0, ISO_SIZE, left, right);
+      value = String(ISOarray[ISOarraypointer]);
+      break;
+    case 1:
+      value = "AP"; //SP for shutter
+      break;
+    case 2:
+      modearraypointer = recalculatePointer(modearraypointer, 0, MODE_SIZE, left, right);
+      value = String(modearray[modearraypointer]);
+      break;
+    case 3:
+      shutterarraypointer = recalculatePointer(shutterarraypointer, 0, SHUTTER_SIZE, left, right);
+      value = String(shutterarray[shutterarraypointer]);
+      break;
+    case 4:
+      aperturearraypointer = recalculatePointer(aperturearraypointer, 0, APERTURE_SIZE, left, right);
+      value = String("f/" + String(aperturearray[aperturearraypointer])); //.concat(aperturearray[aperturearraypointer]);
+      break;
+    case 5:
+      powerOffPointer = recalculatePointer(powerOffPointer, 0, POWER_SIZE, left, right);
+      value = String(powerarray[powerOffPointer]);
+      break;
   }
   return value;
 }
 
-byte recalculatePointer(byte pointer, byte minVal, byte maxVal, boolean left, boolean right)
-{
-  if (left == true)
-  {
+byte recalculatePointer(byte pointer, byte minVal, byte maxVal, boolean left, boolean right) {
+  if (left == true) {
     return decPointer(pointer, minVal, maxVal - 1);
-  }
-  else if (right == true)
-  {
+  } else if (right == true) {
     return incPointer(pointer, maxVal, minVal);
-  }
-  else
-  {
+  } else {
     return pointer;
   }
 }
@@ -342,7 +331,6 @@ void displaySample() {
   display.println(aperturearray[aperturearraypointer]);
   display.setCursor(32, 16);
   display.print(shutterarray[shutterarraypointer]);
-  // display.println(lux);
 
   display.display();
 }
@@ -388,17 +376,3 @@ void tryShutdown() {
     digitalWrite(powercontrol, LOW); // power off
   }
 }
-
-/**
-void updateBatteryLevel(currentLevel) {
-  currentLevel = ((analogRead(batinput) - 310) * 1.61);
-  if (batLevel != currentLevel) {
-    batLevel = currentLevel;
-
-    display.setCursor(36, 0);
-    // display.print(F("BAT:"));
-    display.print(batpercent);
-    display.print(F("%"));
-  }
-}
-*/
