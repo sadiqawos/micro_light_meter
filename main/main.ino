@@ -8,17 +8,9 @@
 #define OLED_RESET A3
 Adafruit_SSD1306 display(OLED_RESET);
 
-//#if (SSD1306_LCDHEIGHT != 64)
-//#error("E");
-//#endif
-
 #define I2C_ADDR 0x29
 
-//const int batinput = A0;            // battery voltage check, 100k voltage divider
-// int powercheck = A1; // testing to see if the user is trying to turn off the unit
-// boolean powercontrolflag = 0;
 int powercontrol = 0; // turns off 3.3V boost regulator when put HIGH, holds low after startup
-byte batLevel = A0;
 byte DispPwr = A1;
 byte DispRst = A2;
 
@@ -67,8 +59,8 @@ unsigned long lastTick;
 // input definitions
 OneButton sampleBtn(1, true);
 OneButton menuDownBtn(9, true);
-OneButton menuLeftBtn(8, true);
-OneButton menuRightBtn(10, true);
+OneButton menuLeftBtn(10, true);
+OneButton menuRightBtn(8, true);
 
 bool menuMode = false;
 
