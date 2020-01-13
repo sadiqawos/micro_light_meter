@@ -19,11 +19,17 @@ uint16_t lux = 123;
 byte SA = 0; // eeprom location for aperture setting storage
 byte SI = 1; // eeprom location for ISO setting storage
 byte SM = 2; // eeprom location for mode setting storage
+byte DRIVE_MODE_AD = 3; // eeprom location for drivemode setting
 
 //MODE ARRAY
 byte MODE_SIZE = 2;
 const char *modearray[] = {"INCI.", "REFL."};
 byte modearraypointer = 0;
+
+//DRIVE MODE ARRAY
+byte DRIVE_MODE_SIZE = 2;
+const char *driveModes[] = {"A-P", "S-P"};
+byte driveModePointer = 0;
 
 // MENU ARRAY
 #define MENU_SIZE 6
@@ -89,12 +95,14 @@ void setup() {
   aperturearraypointer = EEPROM.read(SA);
   ISOarraypointer = EEPROM.read(SI);
   modearraypointer = EEPROM.read(SM);
+  driveModePointer = EEPROM.read(DRIVE_MODE_AD);
 
   // aperture pointer out of range means the EEPROM is blank, need to clear all these bad reads
   if (aperturearraypointer < 0 || aperturearraypointer > 15) {
     aperturearraypointer = 0;
     ISOarraypointer = 0;
     modearraypointer = 0;
+    driveModePointer = 0;
   }
 
   // for blue/yellow display
@@ -136,6 +144,7 @@ void takeSample() {
     EEPROM.write(SA, aperturearraypointer);
     EEPROM.write(SI, ISOarraypointer);
     EEPROM.write(SM, modearraypointer);
+    EEPROM.write(DRIVE_MODE_AD, driveModePointer);
   }
   menuMode = false;
 
@@ -203,6 +212,7 @@ void takeSample() {
   lux = channel0 + channel1; // visible and ir combined
 
   calculate();
+  displaySample();
   //**************** END LTR329ALS ************************************
 }
 
@@ -224,7 +234,6 @@ void calculate() {
 
   // go calculate the shutter speed
   calculations(roundev); // recalculates the shutter/aperture combo based on new value
-  displaySample();
 }
 
 void menuDown() {
@@ -266,7 +275,8 @@ String getMenuValue(int pointer, boolean left, boolean right) {
       value = String(ISOarray[ISOarraypointer]);
       break;
     case 1:
-      value = "AP"; //SP for shutter
+      driveModePointer = recalculatePointer(driveModePointer, 0, DRIVE_MODE_SIZE, left, right);
+      value = String(driveModes[driveModePointer]);
       break;
     case 2:
       modearraypointer = recalculatePointer(modearraypointer, 0, MODE_SIZE, left, right);
@@ -343,12 +353,18 @@ void calculations(int roundev) {
     do {
       cev = shuttermath[shutterarraypointer] + aperturemath[aperturearraypointer] + ISOmath[ISOarraypointer];
 
-      // calculated EV is less than measured EV, decrement shutter speed (add more light)
-      if (cev < roundev && shutterarraypointer >= 1 && shutterarraypointer <= 23) {
-        shutterarraypointer--;
-        // calculated EV is more than measured EV, increment shutter speed (remove light)
-      } else if (cev > roundev && shutterarraypointer >= 0 && shutterarraypointer <= 22) {
-        shutterarraypointer++;
+      if (driveModePointer == 0) { // AP-Mode
+        if (cev < roundev && aperturearraypointer >= 1 && aperturearraypointer <= 15) {
+          aperturearraypointer--;
+        } else if (cev > roundev && aperturearraypointer >= 0 && aperturearraypointer <= 14) {
+          aperturearraypointer++;
+        }
+      } else { // SP-Mode
+        if (cev < roundev && shutterarraypointer >= 1 && shutterarraypointer <= 23) {
+          shutterarraypointer--;
+        } else if (cev > roundev && shutterarraypointer >= 0 && shutterarraypointer <= 22) {
+          shutterarraypointer++;
+        }
       }
     } while (cev != roundev);
   }
