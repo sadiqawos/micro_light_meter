@@ -243,10 +243,12 @@ void calculate() {
 
 void menuDown() {
   resetClock();
-  if (menuarraypointer < MENU_SIZE - 1) {
-    menuarraypointer++;
-  } else {
-    menuarraypointer = 0;
+  if (!menuMode) {
+    if (menuarraypointer < MENU_SIZE - 1) {
+      menuarraypointer++;
+    } else {
+      menuarraypointer = 0;
+    }
   }
   menuMode = true;
   drawMenu(menuarraypointer, getMenuValue(menuarraypointer, false, false));
