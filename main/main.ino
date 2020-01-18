@@ -76,6 +76,7 @@ void setup() {
 
   // buttons setup
   sampleBtn.attachClick(takeSample);
+  sampleBtn.attachDoubleClick(beginCalibration);
   menuDownBtn.attachClick(menuDown);
   menuLeftBtn.attachClick(menuLeft);
   menuRightBtn.attachClick(menuRight);
@@ -216,6 +217,10 @@ void takeSample() {
   //**************** END LTR329ALS ************************************
 }
 
+void beginCalibration() {
+
+}
+
 void calculate() {
 
   lux = lux / 2.5; // correct lux for the LTR329ALS sensor
@@ -249,8 +254,8 @@ void menuDown() {
 
 void menuLeft() {
   resetClock();
-
   if (!menuMode) {
+    recalculateDriveModePointer(true, false);
     return;
   }
   String value = getMenuValue(menuarraypointer, true, false);
@@ -260,10 +265,20 @@ void menuLeft() {
 void menuRight() {
   resetClock();
   if (!menuMode) {
+    recalculateDriveModePointer(false, true);
     return;
   }
   String value = getMenuValue(menuarraypointer, false, true);
   drawMenu(menuarraypointer, value);
+}
+
+void recalculateDriveModePointer(boolean left, boolean right) {
+  if (driveModePointer == 0) { // AP-Mode
+    aperturearraypointer = recalculatePointer(aperturearraypointer, 0, APERTURE_SIZE, left, right);
+  } else { // SP-Mode
+    shutterarraypointer = recalculatePointer(shutterarraypointer, 0, SHUTTER_SIZE, left, right);
+  }
+  takeSample();
 }
 
 String getMenuValue(int pointer, boolean left, boolean right) {
