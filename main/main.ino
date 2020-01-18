@@ -243,7 +243,7 @@ void calculate() {
 
 void menuDown() {
   resetClock();
-  if (!menuMode) {
+  if (menuMode) {
     if (menuarraypointer < MENU_SIZE - 1) {
       menuarraypointer++;
     } else {
